@@ -1,0 +1,11 @@
+{
+    "name": "RestroBooks - Restaurant Bookkeeping",
+    "short_name": "RestroBooks",
+    "description": "Complete restaurant bookkeeping app with income, expenses, inventory, payroll, and reports",
+    "start_url": "index.html",
+    "display": "standalone",
+    "background_color": "#1a1a2e",
+    "theme_color": "#1a1a2e",
+    "orientation": "portrait",
+    "icons": []
+}
