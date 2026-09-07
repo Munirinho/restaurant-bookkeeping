@@ -473,8 +473,24 @@
                         <input type="text" id="settings-name" placeholder="My Restaurant">
                     </div>
                     <div class="form-group">
-                        <label>Currency Symbol</label>
-                        <input type="text" id="settings-currency" value="$" maxlength="5">
+                        <label>Currency</label>
+                        <select id="settings-currency-select" onchange="document.getElementById('settings-currency').value=this.value;document.getElementById('settings-currency').focus()">
+                            <option value="KSh">🇰🇪 Kenya Shilling (KSh)</option>
+                            <option value="$">US Dollar ($)</option>
+                            <option value="€">Euro (€)</option>
+                            <option value="£">British Pound (£)</option>
+                            <option value="UGX">Uganda Shilling (UGX)</option>
+                            <option value="TZS">Tanzania Shilling (TZS)</option>
+                            <option value="R">South African Rand (R)</option>
+                            <option value="₹">Indian Rupee (₹)</option>
+                            <option value="NGN">Nigerian Naira (NGN)</option>
+                            <option value="AED">UAE Dirham (AED)</option>
+                            <option value="₦">Naira Symbol (₦)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Currency Symbol (custom)</label>
+                        <input type="text" id="settings-currency" value="KSh" maxlength="5">
                     </div>
                     <div class="form-group">
                         <label>Tax Rate (%)</label>

@@ -6,7 +6,7 @@ let DB = {
     shifts: [],
     settings: {
         name: 'My Restaurant',
-        currency: '$',
+        currency: 'KSh',
         taxRate: 0,
         lowStockThreshold: 5
     }
@@ -17,6 +17,10 @@ function loadData() {
     if (saved) {
         const parsed = JSON.parse(saved);
         DB = { ...DB, ...parsed };
+        if (parsed.settings && parsed.settings.currency === '$') {
+            DB.settings.currency = 'KSh';
+            saveData();
+        }
     }
     loadSettings();
 }
@@ -28,6 +32,11 @@ function saveData() {
 function loadSettings() {
     document.getElementById('settings-name').value = DB.settings.name;
     document.getElementById('settings-currency').value = DB.settings.currency;
+    const sel = document.getElementById('settings-currency-select');
+    if (sel) {
+        const options = Array.from(sel.options).map(o => o.value);
+        sel.value = options.includes(DB.settings.currency) ? DB.settings.currency : '';
+    }
     document.getElementById('settings-tax').value = DB.settings.taxRate;
     document.getElementById('settings-lowstock').value = DB.settings.lowStockThreshold;
 }
