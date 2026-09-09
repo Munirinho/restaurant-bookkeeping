@@ -831,3 +831,27 @@ body {
 .btn-secondary:hover {
     background: var(--primary);
 }
+
+.cloud-status {
+    display: block;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.cloud-status.online {
+    color: var(--green);
+    font-weight: 600;
+}
+
+.cloud-status.error {
+    color: var(--red);
+    font-weight: 600;
+}
+
+.cloud-note {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    line-height: 1.4;
+}

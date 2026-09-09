@@ -27,6 +27,15 @@ function loadData() {
 
 function saveData() {
     localStorage.setItem('restrobooks', JSON.stringify(DB));
+    window.__rb_lastLocalWrite = Date.now();
+    if (window.__cloud && window.__cloud.hasCloud()) {
+        window.__cloud.upload();
+    }
+}
+
+function saveDataLocalOnly() {
+    localStorage.setItem('restrobooks', JSON.stringify(DB));
+    window.__rb_lastLocalWrite = Date.now();
 }
 
 function loadSettings() {

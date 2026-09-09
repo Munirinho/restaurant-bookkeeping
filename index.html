@@ -502,6 +502,16 @@
                     </div>
                     <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
                     <hr>
+                    <div class="form-group">
+                        <label>☁️ Cloud Auto-Save (optional)</label>
+                        <span id="cloud-status" class="cloud-status">Not signed in</span>
+                        <input type="email" id="cloud-email" placeholder="Your Firebase account email">
+                        <input type="password" id="cloud-password" placeholder="Password" style="margin-top:8px">
+                        <button class="btn-secondary" id="btn-cloud-signin" onclick="cloudSignIn()" style="margin-top:10px">Sign In</button>
+                        <button class="btn-secondary" id="btn-cloud-signout" onclick="cloudSignOut()" style="margin-top:6px;display:none">Sign Out</button>
+                        <p class="cloud-note">Sign in with one account to auto-sync all your data to the cloud securely across devices.</p>
+                    </div>
+                    <hr>
                     <button class="btn-danger" onclick="clearAllData()">Clear All Data</button>
                 </div>
             </div>
@@ -518,6 +528,10 @@
             });
         }
     </script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="app.js"></script>
+    <script src="firebase.js"></script>
 </body>
 </html>
