@@ -136,7 +136,7 @@ function navigateTo(page) {
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('page-' + page).classList.add('active');
     document.querySelector(`[data-page="${page}"]`).classList.add('active');
-    const titles = { dashboard: 'Dashboard', income: 'Income', expenses: 'Expenses', inventory: 'Inventory', payroll: 'Payroll', reports: 'Reports' };
+    const titles = { dashboard: 'Dashboard', income: 'Income', expenses: 'Expenses', inventory: 'Inventory', payroll: 'Payroll', reports: 'Reports', signin: 'Sign In / Cloud' };
     document.getElementById('page-title').textContent = titles[page] || page;
 
     if (page === 'payroll') {
@@ -144,6 +144,9 @@ function navigateTo(page) {
     }
     if (page === 'reports') {
         initReportDates();
+    }
+    if (page === 'signin') {
+        if (window.__cloud) window.__cloud.updateUI();
     }
     renderCurrentPage(page);
 }

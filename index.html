@@ -22,6 +22,7 @@
                 <span id="page-title">Dashboard</span>
             </div>
             <div class="header-right">
+                <button id="btn-account" class="header-btn" title="Sign In / Cloud" onclick="navigateTo('signin')"><i class="fas fa-user-circle"></i></button>
                 <button id="btn-export" class="header-btn" title="Export Data"><i class="fas fa-download"></i></button>
                 <button id="btn-settings" class="header-btn" title="Settings"><i class="fas fa-cog"></i></button>
             </div>
@@ -215,6 +216,49 @@
                 </div>
 
                 <div id="report-content" class="report-content"></div>
+            </section>
+
+            <!-- Sign In Page -->
+            <section id="page-signin" class="page">
+                <div class="signin-hero">
+                    <div class="signin-icon"><i class="fas fa-cloud-sun"></i></div>
+                    <h2>Cloud Auto-Save</h2>
+                    <p>Automatically back up all your income, expenses, inventory, and payroll to a secure private cloud. Sign in once — everything syncs across all your devices.</p>
+                </div>
+
+                <div class="signin-card">
+                    <span id="cloud-status-page" class="cloud-status"></span>
+
+                    <h3><i class="fas fa-sign-in-alt"></i> Sign In</h3>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="cloud-email" placeholder="your@email.com" autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <input type="password" id="cloud-password" placeholder="••••••••" autocomplete="current-password">
+                    </div>
+                    <button class="btn-primary" id="btn-cloud-signin" onclick="cloudSignIn()">
+                        <i class="fas fa-cloud-upload-alt"></i> Sign In & Start Syncing
+                    </button>
+                    <button class="btn-secondary" id="btn-cloud-signout" onclick="cloudSignOut()" style="display:none">
+                        <i class="fas fa-sign-out-alt"></i> Sign Out
+                    </button>
+
+                    <div class="signin-note">
+                        <i class="fas fa-shield-alt"></i>
+                        <p><strong>Secure & private:</strong> only your account can see your data. Your files are never shared, and you can access them from any phone in the world.</p>
+                    </div>
+                </div>
+
+                <div class="signin-card">
+                    <h3><i class="fas fa-question-circle"></i> How It Works</h3>
+                    <ol class="signin-steps">
+                        <li><strong>Create an account</strong> once in your Firebase Console (Authentication → Users → Add user)</li>
+                        <li><strong>Sign in here</strong> with that email &amp; password</li>
+                        <li><strong>Everything auto-saves</strong> instantly after that</li>
+                    </ol>
+                </div>
             </section>
         </main>
 
@@ -503,13 +547,9 @@
                     <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
                     <hr>
                     <div class="form-group">
-                        <label>☁️ Cloud Auto-Save (optional)</label>
+                        <label>☁️ Cloud Auto-Save</label>
                         <span id="cloud-status" class="cloud-status">Not signed in</span>
-                        <input type="email" id="cloud-email" placeholder="Your Firebase account email">
-                        <input type="password" id="cloud-password" placeholder="Password" style="margin-top:8px">
-                        <button class="btn-secondary" id="btn-cloud-signin" onclick="cloudSignIn()" style="margin-top:10px">Sign In</button>
-                        <button class="btn-secondary" id="btn-cloud-signout" onclick="cloudSignOut()" style="margin-top:6px;display:none">Sign Out</button>
-                        <p class="cloud-note">Sign in with one account to auto-sync all your data to the cloud securely across devices.</p>
+                        <button class="btn-secondary" onclick="navigateTo('signin')" style="margin-top:8px">Manage Cloud Account</button>
                     </div>
                     <hr>
                     <button class="btn-danger" onclick="clearAllData()">Clear All Data</button>

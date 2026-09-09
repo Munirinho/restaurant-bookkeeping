@@ -25,11 +25,13 @@ function getDeviceId() {
 }
 
 function setCloudStatus(msg, cls) {
-    const el = document.getElementById('cloud-status');
-    if (el) {
-        el.textContent = msg;
-        el.className = 'cloud-status' + (cls ? ' ' + cls : '');
-    }
+    const els = [document.getElementById('cloud-status'), document.getElementById('cloud-status-page')];
+    els.forEach(el => {
+        if (el) {
+            el.textContent = msg;
+            el.className = 'cloud-status' + (cls ? ' ' + cls : '');
+        }
+    });
     const signinBtn = document.getElementById('btn-cloud-signin');
     const signoutBtn = document.getElementById('btn-cloud-signout');
     if (signinBtn) signinBtn.style.display = authed ? 'none' : 'block';
