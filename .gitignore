@@ -1,0 +1,6 @@
+# Local secrets — never commit these
+firebase-config.js
+
+# OS / editor leftovers
+.DS_Store
+Thumbs.db

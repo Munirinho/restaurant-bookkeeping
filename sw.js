@@ -1,4 +1,4 @@
-const CACHE_NAME = 'restrobooks-v4';
+const CACHE_NAME = 'restrobooks-v6';
 const ASSETS = [
     'index.html',
     'style.css',

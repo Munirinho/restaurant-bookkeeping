@@ -1,11 +1,14 @@
-const FIREBASE_CONFIG = {
-    apiKey: 'AIzaSyAR8xe38iJHmTIq3dXmsSJBpO62_KF_eO8',
-    authDomain: 'restrobooks-7129c.firebaseapp.com',
-    databaseURL: 'https://restrobooks-7129c-default-rtdb.europe-west1.firebasedatabase.app',
-    projectId: 'restrobooks-7129c',
-    storageBucket: 'restrobooks-7129c.firebasestorage.app',
-    messagingSenderId: '1091090566420',
-    appId: '1:1091090566420:web:99a6f0e4a80adc60610601'
+// Config is injected at deploy time (GitHub Secrets -> firebase-config.js)
+// and never committed. Locally, copy firebase-config.example.js to
+// firebase-config.js. Empty fallback = cloud sync stays disabled, app works offline.
+const FIREBASE_CONFIG = window.FIREBASE_CONFIG || {
+    apiKey: '',
+    authDomain: '',
+    databaseURL: '',
+    projectId: '',
+    storageBucket: '',
+    messagingSenderId: '',
+    appId: ''
 };
 
 let firebaseInitialized = false;

@@ -811,8 +811,12 @@ body {
 .toast {
     position: fixed;
     bottom: 90px;
-    left: 50%;
-    transform: translateX(-50%) translateY(100px);
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: fit-content;
+    max-width: min(440px, calc(100vw - 32px));
+    transform: translateY(100px);
     background: #0f3460;
     color: #fff;
     padding: 15px 22px;
@@ -820,18 +824,20 @@ body {
     font-size: 15px;
     font-weight: 700;
     text-align: center;
-    max-width: calc(100% - 32px);
-    min-width: 220px;
+    line-height: 1.4;
+    word-wrap: break-word;
+    min-width: min(220px, calc(100vw - 32px));
     box-shadow: 0 8px 30px rgba(0,0,0,0.55);
     z-index: 500;
     transition: transform 0.3s ease, opacity 0.3s ease;
     border: 2px solid var(--primary);
     opacity: 0;
     pointer-events: none;
+    box-sizing: border-box;
 }
 
 .toast.show {
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
     opacity: 1;
 }
 
