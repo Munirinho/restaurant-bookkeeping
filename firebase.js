@@ -75,14 +75,9 @@ function attachAuthListener() {
         }
     });
 
-    const savedEmail = localStorage.getItem('rb_cloud_email');
-    const savedPass = localStorage.getItem('rb_cloud_pass');
-    if (savedEmail && savedPass) {
-        firebase.auth().signInWithEmailAndPassword(savedEmail, savedPass)
-            .catch((err) => {
-                setCloudStatus('Sign-in failed: ' + err.message, 'error');
-            });
-    }
+    // One-time cleanup: remove any password saved by older versions.
+    try { localStorage.removeItem('rb_cloud_pass'); } catch (e) {}
+    // Firebase Auth persists the session itself (IndexedDB); no password storage needed.
 }
 
 function uploadNow() {
@@ -116,10 +111,14 @@ function restoreFromCloud() {
         if (remote.updatedAt && remote.updatedAt >= localMtime) {
             try {
                 delete remote.updatedAt;
-                DB = { ...DB, ...remote };
+                const remoteSettings = remote.settings || {};
+                delete remote.settings;
+                DB = { ...DB, ...remote, settings: { ...(DB.settings || {}), ...remoteSettings } };
                 saveDataLocalOnly();
+                if (typeof applyBranding === 'function') applyBranding();
+                if (typeof loadSettings === 'function') loadSettings();
                 renderCurrentPage(document.querySelector('.nav-btn.active')?.dataset.page || 'dashboard');
-                if (typeof showToast === 'function') showToast('☁️ Cloud data loaded');
+                if (typeof showToast === 'function') showToast('✅ ☁️ Cloud data loaded — your latest saved data is now on this device', 'success', 4500);
             } catch (err) {
                 console.warn('Restore failed', err);
             }
@@ -159,9 +158,15 @@ window.cloudSignIn = function () {
     setCloudStatus('Signing in...', '');
     firebase.auth().signInWithEmailAndPassword(email, pass)
         .then((cred) => {
-            localStorage.setItem('rb_cloud_email', email);
-            localStorage.setItem('rb_cloud_pass', pass);
+            try {
+                // Email only (for convenience). Never store the password —
+                // Firebase Auth persists the session securely itself.
+                localStorage.setItem('rb_cloud_email', email);
+                localStorage.removeItem('rb_cloud_pass');
+            } catch (e) {}
+            document.getElementById('cloud-password').value = '';
             setCloudStatus('☁️ Cloud synced as: ' + cred.user.email, 'online');
+            if (typeof showToast === 'function') showToast('✅ Signed in — cloud sync is ON', 'success', 4000);
             migrateLegacyData(cred.user.uid);
         })
         .catch((err) => {
@@ -182,11 +187,14 @@ window.cloudSignOut = function () {
 };
 
 function updateCloudUI() {
-    const email = localStorage.getItem('rb_cloud_email');
-    if (email) {
-        document.getElementById('cloud-email').value = email;
-        document.getElementById('cloud-password').value = localStorage.getItem('rb_cloud_pass') || '';
-    }
+    try {
+        const email = localStorage.getItem('rb_cloud_email');
+        const emailEl = document.getElementById('cloud-email');
+        if (email && emailEl && !emailEl.value) emailEl.value = email;
+        // Never refill the password field.
+        const passEl = document.getElementById('cloud-password');
+        if (passEl && passEl.value && !authed) passEl.value = '';
+    } catch (e) {}
     setCloudStatus(authed && currentUser ? ('☁️ Cloud synced as: ' + currentUser.email) : 'Not signed in — data stays on this device only', authed ? 'online' : '');
 }
 

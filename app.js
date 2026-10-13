@@ -1,3 +1,7 @@
+const STORAGE_KEY = 'restrobooks';
+const BACKUP_KEY = 'restrobooks_backup';
+const CORRUPT_PREFIX = 'restrobooks_corrupt_';
+
 let DB = {
     income: [],
     expenses: [],
@@ -6,40 +10,128 @@ let DB = {
     shifts: [],
     settings: {
         name: 'My Restaurant',
+        logo: '',
         currency: 'KSh',
         taxRate: 0,
         lowStockThreshold: 5
-    }
+    },
+    updatedAt: 0
 };
 
+let pendingLogoDataUrl = null;
+
+function isValidDB(obj) {
+    return obj && typeof obj === 'object' &&
+        Array.isArray(obj.income) && Array.isArray(obj.expenses) &&
+        Array.isArray(obj.inventory) && Array.isArray(obj.staff) &&
+        Array.isArray(obj.shifts) && obj.settings && typeof obj.settings === 'object';
+}
+
+function safeParse(raw) {
+    try {
+        const parsed = JSON.parse(raw);
+        return isValidDB(parsed) ? parsed : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function stashCorruptCopy(raw) {
+    try {
+        localStorage.setItem(CORRUPT_PREFIX + Date.now(), raw);
+    } catch (e) { /* quota full: ignore */ }
+}
+
 function loadData() {
-    const saved = localStorage.getItem('restrobooks');
-    if (saved) {
-        const parsed = JSON.parse(saved);
-        DB = { ...DB, ...parsed };
-        if (parsed.settings && parsed.settings.currency === '$') {
-            DB.settings.currency = 'KSh';
-            saveData();
+    const raw = localStorage.getItem(STORAGE_KEY);
+    let recoveredFromBackup = false;
+
+    if (raw) {
+        const parsed = safeParse(raw);
+        if (parsed) {
+            DB = { ...DB, ...parsed, settings: { ...DB.settings, ...(parsed.settings || {}) } };
+        } else {
+            // Main copy is corrupt — preserve it for forensics, fall back to auto-backup
+            stashCorruptCopy(raw);
+            const backupRaw = localStorage.getItem(BACKUP_KEY);
+            const backupParsed = backupRaw ? safeParse(backupRaw) : null;
+            if (backupParsed) {
+                DB = { ...DB, ...backupParsed, settings: { ...DB.settings, ...(backupParsed.settings || {}) } };
+                recoveredFromBackup = true;
+            }
+        }
+    } else {
+        // Fresh device / cleared storage — try auto-backup before starting empty
+        const backupRaw = localStorage.getItem(BACKUP_KEY);
+        const backupParsed = backupRaw ? safeParse(backupRaw) : null;
+        if (backupParsed) {
+            DB = { ...DB, ...backupParsed, settings: { ...DB.settings, ...(backupParsed.settings || {}) } };
+            recoveredFromBackup = true;
         }
     }
+    if (DB.settings && DB.settings.currency === '$') {
+        DB.settings.currency = 'KSh';
+        saveData();
+    }
+    pendingLogoDataUrl = null;
     loadSettings();
+    applyBranding();
+    requestPersistentStorage();
+    updateStorageStatus();
+    if (recoveredFromBackup && typeof showToast === 'function') {
+        setTimeout(() => showToast('Recovered data from auto-backup'), 500);
+    }
 }
 
 function saveData() {
-    localStorage.setItem('restrobooks', JSON.stringify(DB));
+    // Keep a rolling copy of the last good state BEFORE overwriting,
+    // so a crash / quota error mid-write can never wipe everything.
+    try {
+        const existing = localStorage.getItem(STORAGE_KEY);
+        if (existing && safeParse(existing)) {
+            localStorage.setItem(BACKUP_KEY, existing);
+        }
+    } catch (e) { /* ignore backup failure */ }
+    DB.updatedAt = Date.now();
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+    } catch (e) {
+        // Most likely QuotaExceededError (logo too large). Retry without logo rather than losing data.
+        if (DB.settings && DB.settings.logo) {
+            try {
+                const withoutLogo = { ...DB, settings: { ...DB.settings, logo: '' } };
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(withoutLogo));
+                showToast('Storage full — logo removed to protect your data. Use a smaller image.');
+                DB.settings.logo = '';
+                pendingLogoDataUrl = null;
+                loadSettings();
+                applyBranding();
+                return;
+            } catch (e2) { /* fall through */ }
+        }
+        console.warn('saveData failed:', e);
+        showToast('Could not save! Storage full — export a JSON backup now.');
+        return;
+    }
     window.__rb_lastLocalWrite = Date.now();
+    updateStorageStatus();
     if (window.__cloud && window.__cloud.hasCloud()) {
         window.__cloud.upload();
     }
 }
 
 function saveDataLocalOnly() {
-    localStorage.setItem('restrobooks', JSON.stringify(DB));
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+    } catch (e) {
+        console.warn('saveDataLocalOnly failed:', e);
+    }
     window.__rb_lastLocalWrite = Date.now();
+    updateStorageStatus();
 }
 
 function loadSettings() {
-    document.getElementById('settings-name').value = DB.settings.name;
+    document.getElementById('settings-name').value = DB.settings.name || 'My Restaurant';
     document.getElementById('settings-currency').value = DB.settings.currency;
     const sel = document.getElementById('settings-currency-select');
     if (sel) {
@@ -48,24 +140,221 @@ function loadSettings() {
     }
     document.getElementById('settings-tax').value = DB.settings.taxRate;
     document.getElementById('settings-lowstock').value = DB.settings.lowStockThreshold;
+    const preview = document.getElementById('logo-preview');
+    if (preview) {
+        const logo = pendingLogoDataUrl !== null ? pendingLogoDataUrl : (DB.settings.logo || '');
+        if (logo) {
+            preview.src = logo;
+            preview.hidden = false;
+        } else {
+            preview.removeAttribute('src');
+            preview.hidden = true;
+        }
+    }
+    const fileInput = document.getElementById('settings-logo');
+    if (fileInput) fileInput.value = '';
 }
 
 function saveSettings() {
-    DB.settings.name = document.getElementById('settings-name').value;
-    DB.settings.currency = document.getElementById('settings-currency').value;
+    DB.settings.name = (document.getElementById('settings-name').value || 'My Restaurant').trim() || 'My Restaurant';
+    DB.settings.currency = document.getElementById('settings-currency').value || 'KSh';
+    if (pendingLogoDataUrl !== null) {
+        DB.settings.logo = pendingLogoDataUrl; // '' means removed
+        pendingLogoDataUrl = null;
+    }
     DB.settings.taxRate = parseFloat(document.getElementById('settings-tax').value) || 0;
     DB.settings.lowStockThreshold = parseInt(document.getElementById('settings-lowstock').value) || 5;
     saveData();
+    applyBranding();
     hideModal('settings-modal');
     showToast('Settings saved!');
     renderDashboard();
 }
 
-function clearAllData() {
-    if (confirm('Are you sure? This will delete ALL data permanently!')) {
-        localStorage.removeItem('restrobooks');
-        location.reload();
+// ===== Restaurant logo / branding =====
+function applyBranding() {
+    const name = (DB.settings && DB.settings.name) || 'My Restaurant';
+    const logo = (DB.settings && DB.settings.logo) || '';
+    const nameEl = document.getElementById('restaurant-name-display');
+    if (nameEl) nameEl.textContent = name;
+    const img = document.getElementById('restaurant-logo');
+    const fallbackIcon = document.getElementById('header-default-icon');
+    if (img) {
+        if (logo) {
+            img.src = logo;
+            img.hidden = false;
+            if (fallbackIcon) fallbackIcon.style.display = 'none';
+        } else {
+            img.removeAttribute('src');
+            img.hidden = true;
+            if (fallbackIcon) fallbackIcon.style.display = '';
+        }
     }
+    document.title = name + ' - Restaurant Bookkeeping';
+    // Show logo in browser tab when set (falls back to default icon file)
+    try {
+        let link = document.querySelector("link[rel='icon']");
+        if (link) link.href = logo || 'icon-192.png';
+    } catch (e) { /* ignore */ }
+}
+
+function handleLogoUpload(e) {
+    const file = e.target && e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+        showToast('Please choose an image file');
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        showToast('Image too large (max 5MB)');
+        e.target.value = '';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+        const srcImg = new Image();
+        srcImg.onload = () => {
+            // Downscale to max 256px so it fits in localStorage + cloud sync
+            const MAX = 256;
+            let w = srcImg.width, h = srcImg.height;
+            const scale = Math.min(1, MAX / Math.max(w, h));
+            w = Math.max(1, Math.round(w * scale));
+            h = Math.max(1, Math.round(h * scale));
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            canvas.getContext('2d').drawImage(srcImg, 0, 0, w, h);
+            pendingLogoDataUrl = canvas.toDataURL('image/png');
+            const preview = document.getElementById('logo-preview');
+            if (preview) {
+                preview.src = pendingLogoDataUrl;
+                preview.hidden = false;
+            }
+            showToast('Logo ready — tap Save Settings');
+        };
+        srcImg.onerror = () => showToast('Could not read that image');
+        srcImg.src = reader.result;
+    };
+    reader.onerror = () => showToast('Could not read that image');
+    reader.readAsDataURL(file);
+}
+
+function removeLogo() {
+    pendingLogoDataUrl = '';
+    const preview = document.getElementById('logo-preview');
+    if (preview) {
+        preview.removeAttribute('src');
+        preview.hidden = true;
+    }
+    const fileInput = document.getElementById('settings-logo');
+    if (fileInput) fileInput.value = '';
+    showToast('Logo removed — tap Save Settings');
+}
+
+// ===== Data safety: backups, import, recovery =====
+function backupNow(silent) {
+    try {
+        localStorage.setItem(BACKUP_KEY, JSON.stringify(DB));
+        if (!silent) showToast('Backup saved on this device');
+        updateStorageStatus();
+    } catch (e) {
+        if (!silent) showToast('Backup failed: storage full');
+    }
+}
+
+function updateStorageStatus() {
+    const el = document.getElementById('storage-status');
+    if (!el) return;
+    try {
+        const main = localStorage.getItem(STORAGE_KEY) || '';
+        const kb = (main.length / 1024).toFixed(1);
+        const hasBackup = !!localStorage.getItem(BACKUP_KEY);
+        let persist = '';
+        if (navigator.storage && navigator.storage.persisted) {
+            navigator.storage.persisted().then(p => {
+                el.textContent = `Saved on this device (${kb} KB)${hasBackup ? ' + auto-backup' : ''}${p ? ' • protected' : ''} • cloud: ${window.__cloud && window.__cloud.hasCloud() ? 'on' : 'off — sign in for off-device safety'}`;
+            }).catch(() => {});
+            return;
+        }
+        el.textContent = `Saved on this device (${kb} KB)${hasBackup ? ' + auto-backup' : ''}`;
+    } catch (e) {
+        el.textContent = 'Storage unavailable — export a backup now!';
+    }
+}
+
+function requestPersistentStorage() {
+    try {
+        if (navigator.storage && navigator.storage.persist) {
+            navigator.storage.persist().then(() => updateStorageStatus()).catch(() => {});
+        }
+    } catch (e) { /* ignore */ }
+}
+
+function importData(e) {
+    const file = e.target && e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+        const parsed = safeParse(reader.result);
+        if (!parsed) {
+            showToast('Invalid backup file — nothing changed');
+            e.target.value = '';
+            return;
+        }
+        if (!confirm('Restore this backup? Current data will be kept as auto-backup.')) {
+            e.target.value = '';
+            return;
+        }
+        backupNow(true); // preserve current state before overwrite
+        DB = { ...DB, ...parsed, settings: { ...DB.settings, ...(parsed.settings || {}) } };
+        pendingLogoDataUrl = null;
+        saveData();
+        loadSettings();
+        applyBranding();
+        renderCurrentPage(document.querySelector('.nav-btn.active')?.dataset.page || 'dashboard');
+        showToast('Backup restored!');
+        e.target.value = '';
+    };
+    reader.onerror = () => showToast('Could not read backup file');
+    reader.readAsText(file);
+}
+
+function restoreBackup() {
+    const backupRaw = localStorage.getItem(BACKUP_KEY);
+    const parsed = backupRaw ? safeParse(backupRaw) : null;
+    if (!parsed) {
+        showToast('No auto-backup found');
+        return;
+    }
+    if (!confirm('Recover last auto-backup? Current data will be preserved as a corrupt-copy first.')) return;
+    try {
+        const current = localStorage.getItem(STORAGE_KEY);
+        if (current) stashCorruptCopy(current);
+    } catch (e) { /* ignore */ }
+    DB = { ...DB, ...parsed, settings: { ...DB.settings, ...(parsed.settings || {}) } };
+    pendingLogoDataUrl = null;
+    saveDataLocalOnly();
+    if (window.__cloud && window.__cloud.hasCloud()) window.__cloud.upload();
+    loadSettings();
+    applyBranding();
+    renderCurrentPage(document.querySelector('.nav-btn.active')?.dataset.page || 'dashboard');
+    showToast('Auto-backup recovered!');
+}
+
+function clearAllData() {
+    // Never wipe without a recoverable copy: stash backup + download JSON first.
+    backupNow(true);
+    try {
+        const data = JSON.stringify(DB, null, 2);
+        downloadFile(data, `restrobooks-pre-wipe-${today()}.json`, 'application/json');
+    } catch (e) { /* ignore download failure */ }
+    if (!confirm('Delete ALL data? A backup was just saved/downloaded. Continue?')) return;
+    if (!confirm('Really erase everything? This is the last warning.')) return;
+    try {
+        // Keep BACKUP_KEY intact so Restore can still recover after a wipe.
+        localStorage.removeItem(STORAGE_KEY);
+    } catch (e) { /* ignore */ }
+    location.reload();
 }
 
 function genId() {
@@ -184,11 +473,27 @@ document.querySelectorAll('.modal').forEach(modal => {
 });
 
 // Toast
-function showToast(msg) {
+let toastTimer = null;
+function showToast(msg, type, durationMs) {
     const toast = document.getElementById('toast');
+    if (!toast) return;
+    // Backwards compatible: showToast(msg), showToast(msg, 4000), showToast(msg, 'success'), showToast(msg, 'success', 4500)
+    let kind = '';
+    let duration = 2500;
+    if (typeof type === 'number') {
+        duration = type;
+    } else if (typeof type === 'string') {
+        kind = type;
+        if (typeof durationMs === 'number') duration = durationMs;
+        else if (kind === 'success') duration = 4000;
+        else if (kind === 'error') duration = 4500;
+    } else if (typeof durationMs === 'number') {
+        duration = durationMs;
+    }
     toast.textContent = msg;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 2500);
+    toast.className = 'toast show' + (kind ? ' toast-' + kind : '');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
 }
 
 // ===== DASHBOARD =====

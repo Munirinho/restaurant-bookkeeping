@@ -18,8 +18,12 @@
     <div id="app">
         <header id="header">
             <div class="header-left">
-                <i class="fas fa-utensils"></i>
-                <span id="page-title">Dashboard</span>
+                <img id="restaurant-logo" alt="Restaurant logo" hidden>
+                <i id="header-default-icon" class="fas fa-utensils"></i>
+                <div class="header-titles">
+                    <span id="restaurant-name-display">My Restaurant</span>
+                    <span id="page-title">Dashboard</span>
+                </div>
             </div>
             <div class="header-right">
                 <button id="btn-account" class="header-btn" title="Sign In / Cloud" onclick="navigateTo('signin')"><i class="fas fa-user-circle"></i></button>
@@ -517,6 +521,15 @@
                         <input type="text" id="settings-name" placeholder="My Restaurant">
                     </div>
                     <div class="form-group">
+                        <label>Restaurant Logo / Icon</label>
+                        <img id="logo-preview" alt="Logo preview" hidden>
+                        <input type="file" id="settings-logo" accept="image/*" onchange="handleLogoUpload(event)">
+                        <div class="logo-actions">
+                            <button type="button" class="btn-secondary" onclick="removeLogo()">Remove Logo</button>
+                        </div>
+                        <small class="cloud-note">JPG/PNG, resized automatically. Shows in the top bar and browser tab.</small>
+                    </div>
+                    <div class="form-group">
                         <label>Currency</label>
                         <select id="settings-currency-select" onchange="document.getElementById('settings-currency').value=this.value;document.getElementById('settings-currency').focus()">
                             <option value="KSh">🇰🇪 Kenya Shilling (KSh)</option>
@@ -545,6 +558,15 @@
                         <input type="number" id="settings-lowstock" min="1" value="5">
                     </div>
                     <button class="btn-primary" onclick="saveSettings()">Save Settings</button>
+                    <hr>
+                    <div class="form-group">
+                        <label>🛡️ Data Safety</label>
+                        <span id="storage-status" class="cloud-status">Checking storage…</span>
+                        <button class="btn-secondary" onclick="backupNow()">⬇️ Backup Now (saves copy)</button>
+                        <button class="btn-secondary" onclick="document.getElementById('import-file').click()">⬆️ Restore from JSON backup</button>
+                        <input type="file" id="import-file" accept="application/json,.json" hidden onchange="importData(event)">
+                        <button class="btn-secondary" onclick="restoreBackup()">↩️ Recover Last Auto-Backup</button>
+                    </div>
                     <hr>
                     <div class="form-group">
                         <label>☁️ Cloud Auto-Save</label>

@@ -62,9 +62,58 @@ body {
     font-size: 20px;
 }
 
-.header-left span {
-    font-size: 18px;
+#restaurant-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: #fff;
+    flex-shrink: 0;
+}
+
+.header-titles {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+}
+
+#restaurant-name-display {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+.header-left span#page-title {
+    font-size: 17px;
     font-weight: 700;
+}
+
+#logo-preview {
+    width: 72px;
+    height: 72px;
+    border-radius: 12px;
+    object-fit: cover;
+    background: #fff;
+    display: block;
+    margin-bottom: 8px;
+}
+
+#logo-preview[hidden] {
+    display: none;
+}
+
+.logo-actions {
+    margin-top: 8px;
+}
+
+.logo-actions .btn-secondary {
+    margin-bottom: 0;
+    padding: 8px;
+    font-size: 13px;
 }
 
 .header-right {
@@ -761,22 +810,39 @@ body {
 /* Toast */
 .toast {
     position: fixed;
-    bottom: 80px;
+    bottom: 90px;
     left: 50%;
     transform: translateX(-50%) translateY(100px);
-    background: var(--bg-card);
-    color: var(--text);
-    padding: 12px 24px;
-    border-radius: 10px;
-    font-size: 14px;
-    box-shadow: var(--shadow);
-    z-index: 300;
-    transition: transform 0.3s ease;
-    border: 1px solid var(--primary);
+    background: #0f3460;
+    color: #fff;
+    padding: 15px 22px;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    text-align: center;
+    max-width: calc(100% - 32px);
+    min-width: 220px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.55);
+    z-index: 500;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    border: 2px solid var(--primary);
+    opacity: 0;
+    pointer-events: none;
 }
 
 .toast.show {
     transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.toast-success {
+    background: #14532d;
+    border-color: var(--green);
+}
+
+.toast-error {
+    background: #5c1a1a;
+    border-color: var(--red);
 }
 
 /* Empty State */
