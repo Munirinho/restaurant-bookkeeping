@@ -41,9 +41,24 @@ function setCloudStatus(msg, cls) {
     if (signoutBtn) signoutBtn.style.display = authed ? 'block' : 'none';
 }
 
+// Catches malformed injected config (e.g. a secret pasted as "key: 'value'"
+// instead of just the value) so the status says what's actually wrong.
+function configLooksValid(cfg) {
+    const fields = ['apiKey', 'authDomain', 'databaseURL', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+    return fields.every(k => {
+        const v = cfg[k];
+        return typeof v === 'string' && v.length > 0 && v.indexOf('\n') === -1 && v.indexOf("'") === -1;
+    });
+}
+
 function initFirebase() {
     if (!FIREBASE_CONFIG.apiKey || !FIREBASE_CONFIG.databaseURL) {
         setCloudStatus('Cloud sync not configured', 'error');
+        return false;
+    }
+    if (!configLooksValid(FIREBASE_CONFIG)) {
+        setCloudStatus('Cloud config invalid — check the deployed firebase-config.js / GitHub Secrets', 'error');
+        console.warn('Firebase config values look malformed:', FIREBASE_CONFIG);
         return false;
     }
     try {

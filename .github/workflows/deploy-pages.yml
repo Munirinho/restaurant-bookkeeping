@@ -47,6 +47,11 @@ jobs:
           };
           EOF
 
+      # Fail the deploy instead of shipping a broken config (e.g. a secret
+      # pasted as "key: 'value'" instead of just the value).
+      - name: Validate generated config
+        run: node --check firebase-config.js
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
