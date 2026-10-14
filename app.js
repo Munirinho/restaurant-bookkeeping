@@ -214,8 +214,8 @@ function handleLogoUpload(e) {
     reader.onload = () => {
         const srcImg = new Image();
         srcImg.onload = () => {
-            // Downscale to max 256px so it fits in localStorage + cloud sync
-            const MAX = 256;
+            // Downscale to max 192px so it fits in localStorage + stays fast on slow cloud sync
+            const MAX = 192;
             let w = srcImg.width, h = srcImg.height;
             const scale = Math.min(1, MAX / Math.max(w, h));
             w = Math.max(1, Math.round(w * scale));
