@@ -242,10 +242,10 @@
                         <label>Password</label>
                         <input type="password" id="cloud-password" placeholder="••••••••" autocomplete="current-password">
                     </div>
-                    <button class="btn-primary" id="btn-cloud-signin" onclick="cloudSignIn()">
+                    <button class="btn-primary" id="btn-cloud-signin" onclick="fireCloud('cloudSignIn')">
                         <i class="fas fa-cloud-upload-alt"></i> Sign In & Start Syncing
                     </button>
-                    <button class="btn-secondary" id="btn-cloud-signout" onclick="cloudSignOut()" style="display:none">
+                    <button class="btn-secondary" id="btn-cloud-signout" onclick="fireCloud('cloudSignOut')" style="display:none">
                         <i class="fas fa-sign-out-alt"></i> Sign Out
                     </button>
 
@@ -265,7 +265,7 @@
                         <label>Password (min 6 characters)</label>
                         <input type="password" id="signup-password" placeholder="••••••••" autocomplete="new-password">
                     </div>
-                    <button class="btn-primary" id="btn-cloud-signup" onclick="cloudSignUp()">
+                    <button class="btn-primary" id="btn-cloud-signup" onclick="fireCloud('cloudSignUp')">
                         <i class="fas fa-user-plus"></i> Sign Up & Save My Data to Cloud
                     </button>
 
@@ -608,6 +608,24 @@
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').catch(() => {});
             });
+        }
+        // Inline so it always matches the buttons on this page, even if a
+        // cached firebase.js hasn't caught up yet — then tell the user to reload.
+        function fireCloud(n) {
+            var f = window[n];
+            if (typeof f === 'function') {
+                f();
+            } else {
+                var t = document.getElementById('toast');
+                var msg = 'App is updating — close and reopen, then try again';
+                if (t) {
+                    t.textContent = msg;
+                    t.className = 'toast show toast-error';
+                    setTimeout(function () { t.classList.remove('show'); }, 4000);
+                } else {
+                    alert(msg);
+                }
+            }
         }
     </script>
     <script defer src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
