@@ -112,6 +112,8 @@ function restoreFromCloud() {
         if (typeof showToast === 'function') showToast('Slow connection — showing on-device data, cloud will catch up', 'error', 4500);
     }, 12000);
     const done = () => { clearTimeout(slowTimer); pendingInitialRestore = false; };
+    const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    const elapsed = () => (((typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()) - t1) / 1000).toFixed(1);
     dbRef.once('value').then((snap) => {
         done();
         const remote = snap.val();
@@ -130,6 +132,12 @@ function restoreFromCloud() {
                 if (typeof applyBranding === 'function') applyBranding();
                 if (typeof loadSettings === 'function') loadSettings();
                 renderCurrentPage(document.querySelector('.nav-btn.active')?.dataset.page || 'dashboard');
+                try {
+                    const kb = Math.max(1, Math.round(JSON.stringify(remote).length / 1024));
+                    const info = elapsed() + 's • ' + kb + ' KB';
+                    try { localStorage.setItem('rb_last_sync', info); } catch (e) {}
+                    setCloudStatus('☁️ Cloud synced as: ' + (currentUser ? currentUser.email : '') + ' (' + info + ')', 'online');
+                } catch (e) { /* keep default status */ }
                 if (typeof showToast === 'function') {
                     showToast(slow ? '✅ Cloud caught up — latest data is now on this device' : '✅ ☁️ Cloud data loaded — your latest saved data is now on this device', 'success', 4500);
                 }
@@ -180,6 +188,7 @@ window.cloudSignIn = function () {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in…';
     }
     setCloudStatus('Signing in...', '');
+    const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
     // If auth itself stalls (very slow network), say so instead of hanging silently.
     const authTimer = setTimeout(() => {
         if (signInBusy && !authed && typeof showToast === 'function') {
@@ -203,9 +212,18 @@ window.cloudSignIn = function () {
                 localStorage.removeItem('rb_cloud_pass');
             } catch (e) {}
             document.getElementById('cloud-password').value = '';
-            setCloudStatus('☁️ Cloud synced as: ' + cred.user.email, 'online');
-            if (typeof showToast === 'function') showToast('✅ Signed in — cloud sync is ON', 'success', 4000);
-            migrateLegacyData(cred.user.uid);
+            const authSec = (((typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now()) - t0) / 1000).toFixed(1);
+            setCloudStatus('☁️ Cloud synced as: ' + cred.user.email + ' (signed in ' + authSec + 's, loading data…)', 'online');
+            if (typeof showToast === 'function') showToast('✅ Signed in in ' + authSec + 's — loading cloud data…', 'success', 4000);
+            try {
+                // One-time legacy migration; skip on later sign-ins to keep them fast.
+                if (!localStorage.getItem('rb_migrated')) {
+                    migrateLegacyData(cred.user.uid);
+                    localStorage.setItem('rb_migrated', '1');
+                }
+            } catch (e) {
+                migrateLegacyData(cred.user.uid);
+            }
         })
         .catch((err) => {
             setCloudStatus('Sign-in failed: ' + err.message, 'error');

@@ -214,7 +214,8 @@ function handleLogoUpload(e) {
     reader.onload = () => {
         const srcImg = new Image();
         srcImg.onload = () => {
-            // Downscale to max 192px so it fits in localStorage + stays fast on slow cloud sync
+            // Downscale to max 192px JPEG so it stays tiny in localStorage
+            // and fast on slow cloud sync (re-upload your logo to shrink it)
             const MAX = 192;
             let w = srcImg.width, h = srcImg.height;
             const scale = Math.min(1, MAX / Math.max(w, h));
@@ -224,7 +225,7 @@ function handleLogoUpload(e) {
             canvas.width = w;
             canvas.height = h;
             canvas.getContext('2d').drawImage(srcImg, 0, 0, w, h);
-            pendingLogoDataUrl = canvas.toDataURL('image/png');
+            pendingLogoDataUrl = canvas.toDataURL('image/jpeg', 0.85);
             const preview = document.getElementById('logo-preview');
             if (preview) {
                 preview.src = pendingLogoDataUrl;
