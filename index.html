@@ -256,10 +256,30 @@
                 </div>
 
                 <div class="signin-card">
+                    <h3><i class="fas fa-user-plus"></i> New here? Create Account</h3>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="signup-email" placeholder="your@email.com" autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label>Password (min 6 characters)</label>
+                        <input type="password" id="signup-password" placeholder="••••••••" autocomplete="new-password">
+                    </div>
+                    <button class="btn-primary" id="btn-cloud-signup" onclick="cloudSignUp()">
+                        <i class="fas fa-user-plus"></i> Sign Up & Save My Data to Cloud
+                    </button>
+
+                    <div class="signin-note">
+                        <i class="fas fa-info-circle"></i>
+                        <p>Your existing on-device entries are uploaded to your new account, so nothing is lost.</p>
+                    </div>
+                </div>
+
+                <div class="signin-card">
                     <h3><i class="fas fa-question-circle"></i> How It Works</h3>
                     <ol class="signin-steps">
-                        <li><strong>Create an account</strong> once in your Firebase Console (Authentication → Users → Add user)</li>
-                        <li><strong>Sign in here</strong> with that email &amp; password</li>
+                        <li><strong>Create an account</strong> with Sign Up above — no console needed</li>
+                        <li><strong>Sign in here</strong> with that email &amp; password on any device</li>
                         <li><strong>Everything auto-saves</strong> instantly after that</li>
                     </ol>
                 </div>

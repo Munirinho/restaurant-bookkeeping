@@ -170,6 +170,63 @@ function migrateLegacyData(userId) {
     }).catch(() => {});
 }
 
+let signUpBusy = false;
+window.cloudSignUp = function () {
+    if (signUpBusy) return;
+    const email = document.getElementById('signup-email').value.trim();
+    const pass = document.getElementById('signup-password').value;
+    if (!email || !pass) {
+        setCloudStatus('Enter email and password to sign up', 'error');
+        return;
+    }
+    if (pass.length < 6) {
+        setCloudStatus('Password must be at least 6 characters', 'error');
+        return;
+    }
+    if (!firebaseInitialized) initFirebase();
+    signUpBusy = true;
+    const btn = document.getElementById('btn-cloud-signup');
+    const origBtn = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account…';
+    }
+    setCloudStatus('Creating account...', '');
+    const release = () => {
+        signUpBusy = false;
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origBtn;
+        }
+    };
+    firebase.auth().createUserWithEmailAndPassword(email, pass)
+        .then((cred) => {
+            try {
+                // Email only for convenience — never store the password.
+                localStorage.setItem('rb_cloud_email', email);
+                localStorage.removeItem('rb_cloud_pass');
+            } catch (e) {}
+            document.getElementById('signup-password').value = '';
+            const cloudPass = document.getElementById('cloud-password');
+            if (cloudPass) cloudPass.value = '';
+            setCloudStatus('☁️ Cloud synced as: ' + cred.user.email, 'online');
+            // Push this device's existing data to the brand-new account,
+            // so previous entries appear under the new login.
+            uploadNow();
+            if (typeof showToast === 'function') showToast('✅ Account created — your existing data is now saved to your new account', 'success', 4500);
+        })
+        .catch((err) => {
+            let msg = err.message;
+            if (err.code === 'auth/email-already-in-use') msg = 'Account already exists — sign in above instead';
+            else if (err.code === 'auth/weak-password') msg = 'Password too weak — use at least 6 characters';
+            else if (err.code === 'auth/invalid-email') msg = 'That email address looks invalid';
+            else if (err.code === 'auth/operation-not-allowed') msg = 'Sign-up is disabled — enable Email/Password in Firebase Console → Authentication → Sign-in method';
+            setCloudStatus('Sign-up failed: ' + msg, 'error');
+            if (typeof showToast === 'function') showToast('Sign-up failed: ' + msg, 'error', 4500);
+        })
+        .finally(release);
+};
+
 let signInBusy = false;
 window.cloudSignIn = function () {
     if (signInBusy) return;
