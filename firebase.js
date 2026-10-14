@@ -171,6 +171,16 @@ function migrateLegacyData(userId) {
 }
 
 let signUpBusy = false;
+// Rejects if the auth request stalls, so the button never stays stuck forever.
+function authWithTimeout(promise, ms) {
+    return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject({
+            code: 'auth/network-timeout',
+            message: 'Request timed out after ' + Math.round(ms / 1000) + 's — check your connection and tap again'
+        }), ms))
+    ]);
+}
 window.cloudSignUp = function () {
     if (signUpBusy) return;
     const email = document.getElementById('signup-email').value.trim();
@@ -199,7 +209,7 @@ window.cloudSignUp = function () {
             btn.innerHTML = origBtn;
         }
     };
-    firebase.auth().createUserWithEmailAndPassword(email, pass)
+    authWithTimeout(firebase.auth().createUserWithEmailAndPassword(email, pass), 30000)
         .then((cred) => {
             try {
                 // Email only for convenience — never store the password.
@@ -260,7 +270,7 @@ window.cloudSignIn = function () {
             btn.innerHTML = origBtn;
         }
     };
-    firebase.auth().signInWithEmailAndPassword(email, pass)
+    authWithTimeout(firebase.auth().signInWithEmailAndPassword(email, pass), 30000)
         .then((cred) => {
             try {
                 // Email only (for convenience). Never store the password —
